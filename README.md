@@ -110,7 +110,7 @@ just deps
 
 ## License
 
-[License details here]
+Apache 2.0
 
 ## Contributions
 

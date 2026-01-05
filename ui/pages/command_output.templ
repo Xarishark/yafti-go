@@ -1,0 +1,13 @@
+package pages
+
+import (
+	"github.com/Zeglius/yafti-go/ui/components"
+)
+
+// CommandOutput renders the output of a single command execution
+// This is used for inline execution via HTMX
+templ CommandOutput(cmd string) {
+	<div class="bg-gray-900 text-white p-4 rounded-lg mt-2 font-mono text-sm">
+		@components.Command(cmd)
+	</div>
+}
