@@ -12,3 +12,50 @@ screens:
         description: "Another test action"
         default: false
         script: "echo 'Test action 2 executed'"
+      - id: "test-multiline"
+        title: "Multi-line Output"
+        description: "Tests multiple lines of output"
+        default: false
+        script: |
+          echo "Line 1"
+          echo "Line 2"
+          echo "Line 3"
+          for i in {1..5}; do
+            echo "Count: $i"
+          done
+      - id: "test-error"
+        title: "Test Error Code"
+        description: "This action will fail with exit code 1"
+        default: false
+        script: |
+          echo "Starting task..."
+          echo "Something went wrong!" >&2
+          exit 1
+      - id: "test-sudo"
+        title: "Test Sudo Command"
+        description: "This requires elevated privileges"
+        default: false
+        script: |
+          echo "Attempting to run a privileged command..."
+          sudo echo "Sudo access granted!"
+          sudo whoami
+      - id: "test-long-running"
+        title: "Long Running Task"
+        description: "Simulates a task that takes time"
+        default: false
+        script: |
+          echo "Starting long task..."
+          for i in {1..10}; do
+            echo "Progress: $i/10"
+            sleep 1
+          done
+          echo "Task completed!"
+      - id: "test-stderr"
+        title: "Test stderr Output"
+        description: "Outputs to both stdout and stderr"
+        default: false
+        script: |
+          echo "This goes to stdout"
+          echo "This goes to stderr" >&2
+          echo "Back to stdout"
+          echo "Another stderr message" >&2
