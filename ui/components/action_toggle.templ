@@ -20,25 +20,7 @@ templ ActionToggle(action config.Action) {
 	<div class="bg-white border border-gray-200 rounded-lg mb-3 overflow-hidden" id={ "action-" + action.ID }>
 		<div class="flex items-center p-4">
 			<div class="flex-1">
-				<div class="flex items-center">
-					<h3 class="text-lg font-semibold">{ action.Title }</h3>
-					<div class="ml-auto">
-						<button
-							type="button"
-							class="relative w-10 h-10 bg-primary hover:bg-primary-focus transition-colors cursor-pointer rounded-md flex items-center justify-center border-0"
-							hx-post={ "/_/execute/" + action.ID }
-							hx-target={ "#output-" + action.ID }
-							hx-swap="innerHTML"
-							hx-indicator={ "#spinner-" + action.ID }
-							title="Run action"
-						>
-							<span id={ "spinner-" + action.ID } class="loading loading-spinner loading-xs htmx-indicator absolute"></span>
-							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-white" style="margin-left: 1px;">
-								<path d="M8 5v14l11-7z"/>
-							</svg>
-						</button>
-					</div>
-				</div>
+				<h3 class="text-lg font-semibold">{ action.Title }</h3>
 				<p class="text-gray-600 text-sm mt-1">{ action.Description }</p>
 				
 				<details class="mt-2">
@@ -49,6 +31,22 @@ templ ActionToggle(action config.Action) {
 						}
 					</div>
 				</details>
+			</div>
+			<div class="ml-4">
+				<button
+					type="button"
+					class="relative w-10 h-10 bg-primary hover:bg-primary-focus transition-colors cursor-pointer rounded-md flex items-center justify-center border-0"
+					hx-post={ "/_/execute/" + action.ID }
+					hx-target={ "#output-" + action.ID }
+					hx-swap="innerHTML"
+					hx-indicator={ "#spinner-" + action.ID }
+					title="Run action"
+				>
+					<span id={ "spinner-" + action.ID } class="loading loading-spinner loading-xs htmx-indicator absolute"></span>
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-white" style="margin-left: 1px;">
+						<path d="M8 5v14l11-7z"/>
+					</svg>
+				</button>
 			</div>
 		</div>
 		<!-- Output container for command execution -->

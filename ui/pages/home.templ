@@ -115,16 +115,11 @@ templ Home() {
 
 					matches.forEach(({ item }) => {
 						const clone = item.node.cloneNode(true);
-						clone.querySelectorAll('*').forEach(el => {
-							if (el.textContent && el.textContent.trim().startsWith('Category:')) {
-								el.remove();
-							}
-						});
-						results.appendChild(clone);
-					});
-				}
+					results.appendChild(clone);
+				});
+			}
 
-				render(input.value);
+			render(input.value);
 				input.addEventListener('input', (e) => render(e.target.value));
 			})();
 		</script>
