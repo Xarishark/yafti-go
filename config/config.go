@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"slices"
+	"sync"
 	"sync/atomic"
 
 	"github.com/goccy/go-yaml"
@@ -14,13 +15,61 @@ func init() {
 	if err := LoadConfig(); err != nil {
 		log.Panicf("Failed to load config: %v", err)
 	}
-	Inhibit.Store(false)
+	Inhibit.Store(0)
 }
 
 var ConfStatus *Config
 
 // Disallow closing the server even if heartbeat is not received
-var Inhibit atomic.Bool
+// Counter incremented on execution start, decremented on completion
+var Inhibit atomic.Int64
+
+// ExecutionStatus represents the state of an action's execution
+type ExecutionStatus int
+
+const (
+	StatusIdle ExecutionStatus = iota
+	StatusRunning
+	StatusComplete
+	StatusError
+)
+
+// ExecutionState tracks execution status for all actions
+type ExecutionState struct {
+	mu     sync.RWMutex
+	states map[string]ExecutionStatus
+}
+
+var execState = &ExecutionState{
+	states: make(map[string]ExecutionStatus),
+}
+
+// GetStatus returns the execution status for an action
+func (es *ExecutionState) GetStatus(actionID string) ExecutionStatus {
+	es.mu.RLock()
+	defer es.mu.RUnlock()
+	if status, ok := es.states[actionID]; ok {
+		return status
+	}
+	return StatusIdle
+}
+
+// SetStatus sets the execution status for an action
+func (es *ExecutionState) SetStatus(actionID string, status ExecutionStatus) {
+	es.mu.Lock()
+	defer es.mu.Unlock()
+	es.states[actionID] = status
+}
+
+// IsRunning checks if an action is currently running
+func (es *ExecutionState) IsRunning(actionID string) bool {
+	return es.GetStatus(actionID) == StatusRunning
+}
+
+// GetExecutionState returns the global execution state tracker
+func GetExecutionState() *ExecutionState {
+	return execState
+}
 
 // Action represents a toggable script to be executed on the final screen
 type Action struct {

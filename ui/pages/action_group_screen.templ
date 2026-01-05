@@ -5,7 +5,7 @@ import (
 	"github.com/Zeglius/yafti-go/ui/components"
 )
 
-// ActionGroupScreen displays a list of actions with toggles.
+// ActionGroupScreen displays a list of actions with inline execution.
 //
 // One is assigned per each element at `screens.[]` in the config file.
 templ ActionGroupScreen(screen config.Screen) {
@@ -13,41 +13,19 @@ templ ActionGroupScreen(screen config.Screen) {
 		<div class="container max-w-2xl mx-auto flex flex-col my-8">
 			<div class="mb-8">
 				<h2 class="text-3xl font-bold mb-2">{ screen.Title }</h2>
-				<p class="text-gray-600">Select the options you'd like to install</p>
+				<p class="text-gray-600">Click "Run" to execute any action</p>
 			</div>
 
 			<div class="bg-white rounded-lg shadow-md p-6">
-				<form id="actionForm" method="POST" action="/confirm_changes" class="flex flex-col gap-4">
-					<input type="hidden" id="scriptIdsInput" name="scriptIds" value="{}"/>
-					
+				<div class="flex flex-col gap-4">
 					for _, act := range screen.Actions {
 						@components.ActionToggle(act)
 					}
 					<div class="flex justify-between mt-6">
 						<a href="/" class="btn btn-outline">Back to Home</a>
-						<button type="button" class="btn btn-primary" onclick="prepareAndSubmit()">Continue</button>
 					</div>
-				</form>
+				</div>
 			</div>
 		</div>
-
-		<script>
-			function prepareAndSubmit() {
-				// Build a JSON object for selected actions
-				const selectedActions = {};
-				document.querySelectorAll('input[type="checkbox"][name="script_ids"]').forEach(checkbox => {
-					selectedActions[checkbox.value] = checkbox.checked ? 'true' : 'false';
-				});
-
-				// Set the cookie with the JSON data
-				document.cookie = "script_ids=" + JSON.stringify(selectedActions) + "; path=/; SameSite=Strict";
-				
-				// Also include the data in the form submission
-				document.getElementById('scriptIdsInput').value = JSON.stringify(selectedActions);
-				
-				// Submit the form
-				document.getElementById('actionForm').submit();
-			}
-		</script>
 	}
 }
