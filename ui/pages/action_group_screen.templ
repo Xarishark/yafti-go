@@ -75,7 +75,7 @@ templ ActionGroupScreen(screen config.Screen) {
 
 				function relevanceScore(text, query) {
 					const tokens = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
-					if (tokens.length === 0) return 0;
+					if (tokens.length === 0) return -1;
 					text = text.toLowerCase();
 					let score = 0;
 					for (const token of tokens) {
