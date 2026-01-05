@@ -9,12 +9,35 @@ import (
 templ Home() {
 	@components.Layout("Home") {
 		<div class="flex flex-col min-h-[calc(100vh-120px)] justify-center">
-			<div class="text-center mb-10 mt-12">
-				<h1 class="text-5xl font-bold mb-2 text-gray-800">Welcome to Bazzite!</h1>
-				<p class="text-gray-600 text-lg">Please select a configuration screen to begin</p>
+			<div class="text-center mb-6 mt-12">
+				<h1 class="text-5xl font-bold mb-6 text-gray-800">Welcome to Bazzite!</h1>
+				
+				<div class="max-w-md mx-auto mb-6 px-4">
+					<input
+						id="portal-search-input"
+						type="search"
+						class="input input-bordered w-full"
+						placeholder="Search portal..."
+						autocomplete="off"
+					/>
+				</div>
+
+				<div id="portal-search-empty" class="text-base font-semibold text-gray-600 mb-4 hidden"></div>
+				<div id="portal-search-results" class="max-w-2xl mx-auto px-4 mb-6 space-y-3 hidden"></div>
+				<div id="portal-search-pool" class="hidden">
+					for _, screen := range config.ConfStatus.Screens {
+						for _, act := range screen.Actions {
+							<div class="search-item" data-title={ act.Title } data-description={ act.Description } data-category={ screen.Title }>
+								@components.ActionToggle(act)
+							</div>
+						}
+					}
+				</div>
+
+				<p id="portal-subtitle" class="text-gray-600 text-lg mb-10">Select a category or use search to begin</p>
 			</div>
 			
-			<div class="flex flex-col gap-3 max-w-md mx-auto w-full px-4">
+			<div class="flex flex-col gap-3 max-w-md mx-auto w-full px-4" id="category-buttons">
 				if len(config.ConfStatus.Screens) > 0 {
 					for i, screen := range config.ConfStatus.Screens {
 						<a href={ templ.SafeURL("/action_group/" + strconv.Itoa(i)) } 
@@ -33,5 +56,77 @@ templ Home() {
 				<p>Bazzite Portal • Powered by Yafti-Go</p>
 			</div>
 		</div>
+
+		<script>
+			(function() {
+				const input = document.getElementById('portal-search-input');
+				const results = document.getElementById('portal-search-results');
+				const emptyState = document.getElementById('portal-search-empty');
+				const categoryButtons = document.getElementById('category-buttons');
+				const subtitle = document.getElementById('portal-subtitle');
+				const poolItems = Array.from(document.querySelectorAll('#portal-search-pool .search-item')).map((node, idx) => ({
+					node,
+					text: (node.dataset.title + ' ' + node.dataset.description + ' ' + node.dataset.category).toLowerCase(),
+					idx,
+				}));
+
+				function relevanceScore(text, query) {
+					const tokens = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+					if (tokens.length === 0) return -1;
+					text = text.toLowerCase();
+					let score = 0;
+					for (const token of tokens) {
+						const pos = text.indexOf(token);
+						if (pos === -1) return -1;
+						score += 1000 - pos + token.length * 10;
+					}
+					return score;
+				}
+
+				function render(query) {
+					const q = query.trim();
+					results.innerHTML = '';
+					if (!q) {
+						emptyState.classList.add('hidden');
+						results.classList.add('hidden');
+						categoryButtons.classList.remove('hidden');
+						subtitle.classList.remove('hidden');
+						return;
+					}
+
+					categoryButtons.classList.add('hidden');
+					subtitle.classList.add('hidden');
+
+					const matches = poolItems
+						.map(item => ({ score: relevanceScore(item.text, q), item }))
+						.filter(entry => entry.score >= 0)
+						.sort((a, b) => b.score - a.score || a.item.idx - b.item.idx)
+						.slice(0, 50);
+
+					if (matches.length === 0) {
+						emptyState.textContent = 'No matches found.';
+						emptyState.classList.remove('hidden');
+						results.classList.add('hidden');
+						return;
+					}
+
+					emptyState.classList.add('hidden');
+					results.classList.remove('hidden');
+
+					matches.forEach(({ item }) => {
+						const clone = item.node.cloneNode(true);
+						clone.querySelectorAll('*').forEach(el => {
+							if (el.textContent && el.textContent.trim().startsWith('Category:')) {
+								el.remove();
+							}
+						});
+						results.appendChild(clone);
+					});
+				}
+
+				render(input.value);
+				input.addEventListener('input', (e) => render(e.target.value));
+			})();
+		</script>
 	}
 }
