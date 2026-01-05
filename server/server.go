@@ -137,12 +137,6 @@ func (s *Server) Start() error {
 	e.POST("/_/execute/:actionId", func(c echo.Context) error {
 		actionID := c.Param("actionId")
 		
-		// Check if action is already running
-		execState := config.GetExecutionState()
-		if execState.IsRunning(actionID) {
-			return c.String(http.StatusConflict, "Action is already running")
-		}
-
 		// Find the action by ID
 		var action config.Action
 		found := false
@@ -162,18 +156,8 @@ func (s *Server) Start() error {
 			return c.String(http.StatusBadRequest, "Action has no script to execute")
 		}
 
-		// Mark as running and increment inhibit counter
-		execState.SetStatus(actionID, config.StatusRunning)
-		config.Inhibit.Add(1)
-		defer func() {
-			config.Inhibit.Add(-1)
-			if execState.GetStatus(actionID) == config.StatusRunning {
-				execState.SetStatus(actionID, config.StatusComplete)
-			}
-		}()
-
-		// Execute the command with streaming
-		handler := newHandler(pages.CommandOutput(action.Script))
+		// Launch command in terminal
+		handler := newHandler(pages.LaunchCommandInTerminal(action.Title, action.Script))
 		handler.ServeHTTP(c.Response(), c.Request())
 
 		return nil
