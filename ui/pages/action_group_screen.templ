@@ -5,27 +5,125 @@ import (
 	"github.com/Zeglius/yafti-go/ui/components"
 )
 
-// ActionGroupScreen displays a list of actions with inline execution.
+// ActionGroupScreen displays a list of actions with toggles and search.
 //
 // One is assigned per each element at `screens.[]` in the config file.
 templ ActionGroupScreen(screen config.Screen) {
 	@components.Layout(screen.Title) {
 		<div class="container max-w-2xl mx-auto flex flex-col my-8">
-			<div class="mb-8">
-				<h2 class="text-3xl font-bold mb-2">{ screen.Title }</h2>
-				<p class="text-gray-600">Click "Run" to execute any action</p>
+			<div class="mb-8 text-center">
+				<h2 class="text-3xl font-bold mb-4">{ screen.Title }</h2>
+				
+				<div class="max-w-md mx-auto mb-4">
+					<input
+						id="category-search-input"
+						type="search"
+						class="input input-bordered w-full"
+						placeholder="Search current category..."
+						autocomplete="off"
+					/>
+				</div>
+
+				<div id="category-search-empty" class="text-base font-semibold text-gray-600 mb-4 hidden">No matches found.</div>
+				<p class="text-gray-600">Select the options you'd like to install</p>
 			</div>
 
-			<div class="bg-white rounded-lg shadow-md p-6">
-				<div class="flex flex-col gap-4">
+			<div class="bg-white rounded-lg shadow-md p-6" id="category-form-wrapper">
+				<form id="actionForm" method="POST" action="/confirm_changes" class="flex flex-col gap-4">
+					<input type="hidden" id="scriptIdsInput" name="scriptIds" value="{}"/>
+					
 					for _, act := range screen.Actions {
-						@components.ActionToggle(act)
+						<div class="searchable-action" data-title={ act.Title } data-description={ act.Description }>
+							@components.ActionToggle(act)
+						</div>
 					}
-					<div class="flex justify-between mt-6">
-						<a href="/" class="btn btn-outline">Back to Home</a>
+					<div class="flex justify-center mt-6" id="category-form-buttons">
+						<a href="/" class="btn btn-outline">Back to Portal Home</a>
 					</div>
-				</div>
+				</form>
 			</div>
 		</div>
+
+		<script>
+			function prepareAndSubmit() {
+				// Build a JSON object for selected actions
+				const selectedActions = {};
+				document.querySelectorAll('input[type="checkbox"][name="script_ids"]').forEach(checkbox => {
+					selectedActions[checkbox.value] = checkbox.checked ? 'true' : 'false';
+				});
+
+				// Set the cookie with the JSON data
+				document.cookie = "script_ids=" + JSON.stringify(selectedActions) + "; path=/; SameSite=Strict";
+				
+				// Also include the data in the form submission
+				document.getElementById('scriptIdsInput').value = JSON.stringify(selectedActions);
+				
+				// Submit the form
+				document.getElementById('actionForm').submit();
+			}
+
+			(function() {
+				const input = document.getElementById('category-search-input');
+				const emptyState = document.getElementById('category-search-empty');
+				const formButtons = document.getElementById('category-form-buttons');
+				const formWrapper = document.getElementById('category-form-wrapper');
+				const items = Array.from(document.querySelectorAll('.searchable-action')).map((el, idx) => ({
+					node: el,
+					text: (el.dataset.title + ' ' + el.dataset.description).toLowerCase(),
+					idx,
+				}));
+
+				function relevanceScore(text, query) {
+					const tokens = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+					if (tokens.length === 0) return -1;
+					text = text.toLowerCase();
+					let score = 0;
+					for (const token of tokens) {
+						const pos = text.indexOf(token);
+						if (pos === -1) return -1;
+						score += 1000 - pos + token.length * 10;
+					}
+					return score;
+				}
+
+				function applyFilter(query) {
+					const q = query.trim();
+					let visible = 0;
+					
+					if (!q) {
+						items.forEach(({ node }) => {
+							node.classList.remove('hidden');
+							node.style.order = '';
+						});
+						emptyState.classList.add('hidden');
+						formButtons.classList.remove('hidden');
+						formWrapper.classList.remove('hidden');
+						return;
+					}
+
+					formButtons.classList.add('hidden');
+					formWrapper.classList.remove('hidden');
+
+					items.forEach(({ node, text }) => {
+						const score = relevanceScore(text, q);
+						const show = score >= 0;
+						node.classList.toggle('hidden', !show);
+						node.style.order = show ? String(-score || 0) : '9999';
+						if (show) visible++;
+					});
+
+					if (visible === 0) {
+						emptyState.classList.remove('hidden');
+						formWrapper.classList.add('hidden');
+					} else {
+						emptyState.classList.add('hidden');
+						formWrapper.classList.remove('hidden');
+					}
+				}
+
+				applyFilter(input.value || '');
+				input.addEventListener('input', (e) => applyFilter(e.target.value));
+			})();
+		</script>
 	}
 }
